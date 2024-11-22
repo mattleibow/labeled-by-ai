@@ -1,0 +1,136 @@
+name: 'Apply Label Using AI'
+
+description: 'Use AI to find the best label to apply to a new issue'
+
+inputs:
+  labels:
+    description: 'The list of labels available.'
+  label-pattern:
+    description: 'The regex pattern to use to match the labels.'
+  apply-label:
+    default: 'true'
+    description: 'Whether or not to apply the label automatically.'
+  issue-json:
+    description: 'The json object of the issue to be labeled.'
+    deprecationMessage: 'This is deprecated and will be removed.'
+
+# outputs:
+#   label:
+#     description: "The label that will be applied to the issue"
+#     value: ${{ steps.random-number-generator.outputs.random-number }}
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Find the best label using AI
+      id: get-label
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}                       # for the gh CLI tool
+        GITHUB_ISSUE: ${{ toJson(github.event.issue) }}     # the issue json from the event
+        LABEL_PATTERN: ${{ inputs.label-pattern }}          # the label pattern to match
+        GITHUB_ISSUE_DEPRECATED: ${{ inputs.issue-json }}   # testing purposes only
+      run: |
+        "Finding the best label using AI.."
+
+        Write-Output "::group::Validating inputs..."
+        # Parse the issue json from the event or fall back
+        # to the deprecated method of reading the issue json
+        # from the environment variable
+        $issue = "$env:GITHUB_ISSUE" | ConvertFrom-Json
+        if (-not $issue) {
+          $issue = "$env:GITHUB_ISSUE_DEPRECATED" | ConvertFrom-Json
+        }
+
+        if (-not $issue) {
+          Write-Error "No issue was found to label."
+          Write-Output "::endgroup::"
+          exit 1
+        }
+        
+        $repoUrl = "${{ github.repositoryUrl }}"
+
+        # Write-Output "::debug::GITHUB_ISSUE: $env:GITHUB_ISSUE"
+        # Write-Output "::debug::GITHUB_ISSUE_DEPRECATED: $env:GITHUB_ISSUE_DEPRECATED"
+        # Write-Output "::debug::issue: $issue"
+
+        Write-Output "Repository URL: $repoUrl"
+        Write-Output "Issue Url: $($issue.html_url)"
+        Write-Output "Issue Title: $($issue.title)"
+        Write-Output "Issue Body:"
+        Write-Output "$($issue.body)"
+        Write-Output "::endgroup::"
+
+        Write-Output "::group::Loading labels..."
+        $labelRegex = "$env:LABEL_PATTERN"
+        $labelSelector = "[.[] | select(.name | test(`"$labelRegex`"))]"
+        $labelsResult = gh label list --repo "$repoUrl" --json name --jq "$labelSelector"
+        $labels = $labelsResult | ConvertFrom-Json
+        Write-Output "::debug::$labels"
+        if (-not $labels) {
+          Write-Error "Failed to get labels from the repository."
+          exit 1
+        }
+        $labelsNames = $labels | Select-Object -ExpandProperty name
+
+        Write-Output "Filtered Labels:"
+        Write-Output "$labelsNames"
+        Write-Output "::endgroup::"
+
+        Write-Output "::group::Asking the AI to find the best label..."
+        $hostAddress = "https://labeled-by-ai.yellowhill-0060a70b.southafricanorth.azurecontainerapps.io"
+        $uri = "$hostAddress/api/label"
+        $bodyObj = @{
+            title = $issue.title
+            body = $issue.body
+            url = $issue.html_url
+            labels = $labelsNames
+        }
+        $body = $bodyObj | ConvertTo-Json
+
+        # Write-Output "::debug::Request Body:"
+        # Write-Output "::debug::$body"
+
+        $response = Invoke-RestMethod `
+          -Method Post `
+          -Uri $uri `
+          -Body $body `
+          -ContentType 'application/json'
+
+        # Write-Output "::debug::Response:"
+        # Write-Output "::debug::$response"
+
+        if (-not $response) {
+          Write-Error "Failed to get a response from the AI service."
+          Write-Output "::endgroup::"
+          exit 1
+        }
+
+        if (-not $response.label) {
+          Write-Warning "No labels matched the contents of this issue."
+          Write-Output "::endgroup::"
+          exit 0
+        }
+
+        Write-Output "Found a great label to apply to the issue: $($response.label)"
+        Write-Output "The reasoning is: $($response.reason)"
+
+        "SELECTED_LABEL=$($response.label)" >> $env:GITHUB_OUTPUT
+        "SELECTED_REASON=$($response.reason)" >> $env:GITHUB_OUTPUT
+        Write-Output "::endgroup::"
+
+    - name: Apply the selected label to the issue
+      shell: pwsh
+      id: apply-label
+      if: ${{ inputs.apply-label == 'true' && steps.get-label.outputs.SELECTED_LABEL != null }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        SELECTED_LABEL: ${{ steps.get-label.outputs.SELECTED_LABEL }}
+        SELECTED_REASON: ${{ steps.get-label.outputs.SELECTED_REASON }}
+      run: |
+        "Applying the selected label to the issue.."
+
+        Write-Output "Found a great label to apply to the issue: $($env:SELECTED_LABEL)"
+        Write-Output "The reasoning is: $($env:SELECTED_REASON)"
+
