@@ -80,48 +80,26 @@ runs:
         Write-Output "::endgroup::"
 
         Write-Output "::group::Loading labels..."
-        if ($env:LABEL_NAMES -or $env:LABEL_PATTERN) {
-          $labelsNamesExplicit = @()
-          if ($env:LABEL_NAMES) {
-            $labelsNamesExplicit =
-              $env:LABEL_NAMES -split '\r|\n' |
-              ForEach-Object { $_.Trim() } |
-              Where-Object { $_ -ne '' }
-          }
-          $labelsNamesPattern = @()
-          if ($env:LABEL_PATTERN) {
-            $labelRegex = "$env:LABEL_PATTERN"
-            $labelSelector = "[.[] | select(.name | test(`"$labelRegex`"))]"
-            $labelsResult = gh label list --repo "$repoUrl" --json name --jq "$labelSelector"
-            $labels = $labelsResult | ConvertFrom-Json
-            Write-Output "::debug::$labels"
-            if (-not $labels) {
-              Write-Error "Failed to get labels from the repository."
-              exit 1
-            }
-            $labelsNamesPattern = $labels | Select-Object -ExpandProperty name
-          }
-          $labelsNames = $labelsNamesExplicit + $labelsNamesPattern | Select-Object -Unique
+        if ($env:CONFIG_FILE) {
+          $labelConfig = Get-Content $env:CONFIG_FILE -Raw | ConvertFrom-Json
+        } else {
           $labelConfig = @{
             version = 1
             rules = @(
               @{
                 name = "Labels"
-                labels = $labelsNames
+                labels =
+                  "$env:LABEL_NAMES" -split '\r|\n' |
+                  ForEach-Object { $_.Trim() } |
+                  Where-Object { $_ -ne '' }
+                pattern = "$env:LABEL_PATTERN"
               }
             )
           }
-        } elseif ($env:CONFIG_FILE) {
-          $labelConfig = Get-Content $env:CONFIG_FILE | ConvertFrom-Json
         }
 
         Write-Output "Filtered Labels:"
-        foreach ($rule in $labelConfig.rules) {
-          Write-Output "Rule Name: $($rule.name)"
-          foreach ($label in $rule.labels) {
-            Write-Output "  - $label"
-          }
-        }
+        Write-Output $labelConfig | ConvertTo-Json -Formatted
         Write-Output "::endgroup::"
 
         Write-Output "::group::Asking the AI to find the best label..."
