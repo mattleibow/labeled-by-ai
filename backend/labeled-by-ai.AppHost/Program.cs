@@ -1,12 +1,14 @@
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var insights = builder.AddAzureApplicationInsights("app-insights");
+var insights = builder.ExecutionContext.IsPublishMode
+    ? builder.AddAzureApplicationInsights("app-insights")
+    : builder.AddConnectionString("app-insights");
 
-//var openai = !builder.ExecutionContext.IsPublishMode
-//    ? builder.AddConnectionString("openai") // use external
-//    : builder.AddAzureOpenAI("openai") // deploy with app
-//        .AddDeployment(new("openai-model", "gpt-4o-mini", "2024-07-18"));
+//var openai = builder.ExecutionContext.IsPublishMode
+//    ? builder.AddAzureOpenAI("openai") // deploy with app
+//        .AddDeployment(new("openai-model", "gpt-4o-mini", "2024-07-18"))
+//    : builder.AddConnectionString("openai"); // use external
 
 var openai = builder.AddConnectionString("openai");
 

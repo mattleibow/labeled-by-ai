@@ -1,56 +1,86 @@
 ﻿# For more info on HTTP files go to https://aka.ms/vs/httpfile
 
-@LabeledByAI_HostAddress = http://localhost:7200
-@LabeledByAI_HostAddress = https://labeled-by-ai.yellowhill-0060a70b.southafricanorth.azurecontainerapps.io/
-
-POST {{LabeledByAI_HostAddress}}/api/label
+POST {{HostAddress}}/api/label
 Content-Type: application/json
+X-GitHub-Token: {{GitHubToken}}
 
 {
-    "labels": [
-        "area/Build",
-        "area/Docs",
-        "area/HarfBuzzSharp",
-        "area/libHarfBuzzSharp.native",
-        "area/libSkiaSharp.native",
-        "area/SkiaSharp.HarfBuzz",
-        "area/SkiaSharp.Views.Blazor",
-        "area/SkiaSharp.Views.Forms",
-        "area/SkiaSharp.Views.Maui",
-        "area/SkiaSharp.Views.Uno",
-        "area/SkiaSharp.Views",
-        "area/SkiaSharp.Workbooks",
-        "area/SkiaSharp"
+  "labels": {
+    "rules": [
+      {
+        "labels": null,
+        "pattern": "^area/.*",
+        "name": "Labels"
+      },
+      {
+        "labels": null,
+        "pattern": "^os/.*",
+        "name": "Platform"
+      }
     ],
-    "body": "        # ## Description\r\n\r\nAfter upgrading my previously working .NET 8 app to .NET 9 using Blazor WASM, it fails to run in both Debug/Release builds.\r\n\r\n# ## Code\r\n\r\n```html\r\n    <div class=\"canvas-wrapper\">\r\n        <SkiaSharp.Views.Blazor.SKCanvasView OnPaintSurface=\"OnPaintSurface\" class=\"skia-canvas\" EnableRenderLoop=\"true\" />\r\n    </div>\r\n```\r\n\r\n# ## Expected Behavior\r\n\r\nApp should start.\r\n\r\n# ## Actual Behavior\r\n\r\nApp fails to start due to unhandled exception:\r\n\r\nSystem.DllNotFoundException: libSkiaSharp\r\n   at SkiaSharp.SKData..cctor()\r\n\r\nThe page loading progress bar stays stuck at 100% and my Page won't load at all.\r\n\r\n# ## Version of SkiaSharp\r\n\r\n2.88.9 (Current)\r\n\r\n# ## Last Known Good Version of SkiaSharp\r\n\r\nOther (Please indicate in the description)\r\n\r\n# ## IDE / Editor\r\n\r\nVisual Studio (Windows)\r\n\r\n# ## Platform / Operating System\r\n\r\nWindows\r\n\r\n# ## Platform / Operating System Version\r\n\r\nWindows/Browser\r\n\r\n# ## Devices\r\n\r\n_No response_\r\n\r\n# ## Relevant Screenshots\r\n\r\n_No response_\r\n\r\n# ## Relevant Log Output\r\n\r\n_No response_\r\n\r\n# ## Code of Conduct\r\n\r\n- [X] I agree to follow this project's Code of Conduct",
-    "title": "[BUG] .NET9 SkiaSharp.Views.Blazor my app won't start",
-    "url": "https://github.com/mono/SkiaSharp/issues/3068"
-}
-
-###
-    
-POST {{LabeledByAI_HostAddress}}/api/label
-Content-Type: application/json
-
-{
-    "labels": [
-        "area/Build",
-        "area/Docs",
-        "area/HarfBuzzSharp",
-        "area/libHarfBuzzSharp.native",
-        "area/libSkiaSharp.native",
-        "area/SkiaSharp.HarfBuzz",
-        "area/SkiaSharp.Views.Blazor",
-        "area/SkiaSharp.Views.Forms",
-        "area/SkiaSharp.Views.Maui",
-        "area/SkiaSharp.Views.Uno",
-        "area/SkiaSharp.Views",
-        "area/SkiaSharp.Workbooks",
-        "area/SkiaSharp"
-    ],
-    "body": "My UI is broken, nothing shows on the screen!",
-    "title": "UI is blank",
-    "url": "https://github.com/mono/SkiaSharp/issues/1234"
+    "version": 1
+  },
+  "issue": {
+    "active_lock_reason": null,
+    "assignee": null,
+    "assignees": [],
+    "author_association": "OWNER",
+    "body": "You are here now!\r\n\r\nThis is line 2\r\n\r\n# # ## heading 4\r\n\r\n```\r\ncode in here\r\n```\r\n\r\nQuotes:\r\n\r\n\"\r\n\r\n'\r\n\r\nI am having issues getting my github action to correctly apply a label. It seems to be random and things like AI are messing with me.",
+    "closed_at": null,
+    "comments": 13,
+    "comments_url": "https://api.github.com/repos/mattleibow/labeled-by-ai/issues/1/comments",
+    "created_at": "2024-11-22T14:34:31Z",
+    "events_url": "https://api.github.com/repos/mattleibow/labeled-by-ai/issues/1/events",
+    "html_url": "https://github.com/mattleibow/labeled-by-ai/issues/1",
+    "id": 2683374662,
+    "labels": [],
+    "labels_url": "https://api.github.com/repos/mattleibow/labeled-by-ai/issues/1/labels{/name}",
+    "locked": false,
+    "milestone": null,
+    "node_id": "I_kwDONQ5nr86f8QxG",
+    "number": 1,
+    "performed_via_github_app": null,
+    "reactions": {
+      "+1": 0,
+      "-1": 0,
+      "confused": 0,
+      "eyes": 0,
+      "heart": 0,
+      "hooray": 0,
+      "laugh": 0,
+      "rocket": 0,
+      "total_count": 0,
+      "url": "https://api.github.com/repos/mattleibow/labeled-by-ai/issues/1/reactions"
+    },
+    "repository_url": "https://api.github.com/repos/mattleibow/labeled-by-ai",
+    "state": "open",
+    "state_reason": "reopened",
+    "timeline_url": "https://api.github.com/repos/mattleibow/labeled-by-ai/issues/1/timeline",
+    "title": "Test issue!",
+    "updated_at": "2024-11-22T19:48:16Z",
+    "url": "https://api.github.com/repos/mattleibow/labeled-by-ai/issues/1",
+    "user": {
+      "avatar_url": "https://avatars.githubusercontent.com/u/1096616?v=4",
+      "events_url": "https://api.github.com/users/mattleibow/events{/privacy}",
+      "followers_url": "https://api.github.com/users/mattleibow/followers",
+      "following_url": "https://api.github.com/users/mattleibow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/mattleibow/gists{/gist_id}",
+      "gravatar_id": "",
+      "html_url": "https://github.com/mattleibow",
+      "id": 1096616,
+      "login": "mattleibow",
+      "node_id": "MDQ6VXNlcjEwOTY2MTY=",
+      "organizations_url": "https://api.github.com/users/mattleibow/orgs",
+      "received_events_url": "https://api.github.com/users/mattleibow/received_events",
+      "repos_url": "https://api.github.com/users/mattleibow/repos",
+      "site_admin": false,
+      "starred_url": "https://api.github.com/users/mattleibow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/mattleibow/subscriptions",
+      "type": "User",
+      "url": "https://api.github.com/users/mattleibow",
+      "user_view_type": "public"
+    }
+  }
 }
 
 ###

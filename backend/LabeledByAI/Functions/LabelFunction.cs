@@ -3,17 +3,29 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Octokit.GraphQL;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace LabeledByAI;
 
 public class LabelFunction(IChatClient chatClient, ILogger<LabelFunction> logger)
 {
-    public record NewIssue(
-        string[] Labels,
-        string Body,
-        string? Title = null,
-        string? Url = null);
+    public record LabelRequest(
+        LabelRequestLabels Labels,
+        LabelRequestIssue Issue);
+
+    public record LabelRequestLabels(
+        LabelRequestLabelsRules[]? Rules);
+
+    public record LabelRequestLabelsRules(
+        string? Name,
+        string[]? Labels,
+        string? Pattern);
+
+    public record LabelRequestIssue(
+        string Title,
+        string Body);
 
     private static readonly JsonSerializerOptions SerializerOptions =
         new()
@@ -36,23 +48,53 @@ public class LabelFunction(IChatClient chatClient, ILogger<LabelFunction> logger
             logger.LogError("No new issue was provided in the request body.");
             return new BadRequestObjectResult("The new issue is null.");
         }
-        if (string.IsNullOrWhiteSpace(newIssue.Body))
+        if (string.IsNullOrWhiteSpace(newIssue.Issue.Body))
         {
             logger.LogError("No new issue body was provided in the request body.");
             return new BadRequestObjectResult("The new issue body is null.");
         }
-        if (newIssue.Labels is null || newIssue.Labels.Length == 0)
+        if (newIssue.Labels?.Rules is null || newIssue.Labels.Rules.Length == 0)
         {
-            logger.LogError("No labels wer provided in the request body.");
+            logger.LogError("No label rules were provided in the request body.");
             return new BadRequestObjectResult("No labels provided.");
         }
 
-        logger.LogInformation("The new issue is a valid object, generating OpenAI request...");
+        logger.LogInformation("The new issue is a valid object.");
+
+        logger.LogInformation("Loading matching labels from GitHub...");
+
+        var connection = new Connection(
+            new("Octokit.GraphQL.Net.SampleApp", "1.0"),
+            request.Headers["X-GitHub-Token"]);
+
+        var query = new Query()
+            .RepositoryOwner(new("owner"))
+            .Repository(Variable.Var("name"))
+            .Select(repo => new
+            {
+                repo.Id,
+                repo.Name,
+                repo.Owner.Login,
+                repo.IsFork,
+                repo.IsPrivate,
+            }).Compile();
+
+        var vars = new Dictionary<string, object>
+{
+    { "owner", "octokit" },
+    { "name", "octokit.graphql.net" },
+};
+
+        var result = await connection.Run(query, vars);
+
+        //logger.LogInformation("Loaded labels, found {matching}.", matching.Count);
+
+        logger.LogInformation("Generating OpenAI request...");
 
         IList<ChatMessage> messages =
         [
-            new(ChatRole.System, GetSystemPrompt(newIssue.Labels)),
-            new(ChatRole.Assistant, GetIssuePrompt(newIssue.Title, newIssue.Body)),
+            //new(ChatRole.System, GetSystemPrompt(newIssue.Labels)),
+            //new(ChatRole.Assistant, GetIssuePrompt(newIssue.Title, newIssue.Body)),
         ];
 
         logger.LogInformation(
@@ -82,11 +124,11 @@ public class LabelFunction(IChatClient chatClient, ILogger<LabelFunction> logger
         return new OkObjectResult(response.ToString());
     }
 
-    private async Task<NewIssue?> GetNewIssueAsync(HttpRequest request)
+    private async Task<LabelRequest?> GetNewIssueAsync(HttpRequest request)
     {
         try
         {
-            return await JsonSerializer.DeserializeAsync<NewIssue>(request.Body, SerializerOptions);
+            return await JsonSerializer.DeserializeAsync<LabelRequest>(request.Body, SerializerOptions);
         }
         catch (Exception ex)
         {
