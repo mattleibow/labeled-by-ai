@@ -8,6 +8,7 @@ using OpenAI;
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<GetBestLabelService>();
+builder.Services.AddSingleton<CalculateEngagementScoreService>();
 
 builder.AddServiceDefaults();
 

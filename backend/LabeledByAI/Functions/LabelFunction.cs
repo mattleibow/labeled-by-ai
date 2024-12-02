@@ -15,15 +15,7 @@ public class LabelFunction(GetBestLabelService service, ILogger<LabelFunction> l
 
     protected override async Task<IActionResult> OnRun(HttpRequest request, GetBestLabelRequest parsedBody)
     {
-        try
-        {
-            var response = await service.ExecuteAsync(parsedBody, request.GetGithubToken());
-            return new OkObjectResult(response);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to execute the service.");
-            return new BadRequestObjectResult("Failed to execute the service.");
-        }
+        var response = await service.ExecuteAsync(parsedBody, request.GetGithubToken());
+        return new OkObjectResult(response);
     }
 }
